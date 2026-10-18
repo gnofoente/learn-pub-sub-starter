@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -39,10 +38,48 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not subscribe to pause: %v", err)
 	}
-
 	fmt.Printf("queue %v declared & bound\n", q.Name)
 
-	util.DoOnSignal(func() {
-		fmt.Println("goodbye...")
-	}, os.Interrupt)
+	gs := gamelogic.NewGameState(username)
+	fmt.Println("a new game state was set")
+
+	for {
+		words := gamelogic.GetInput()
+		if len(words) == 0 {
+			continue
+		}
+
+		switch words[0] {
+		case "spawn":
+			spawn(gs, words)
+		case "move":
+			move(gs, words)
+		case "status":
+			gs.CommandStatus()
+		case "help":
+			gamelogic.PrintClientHelp()
+		case "spam":
+			fmt.Println("spamming not allowed yet!")
+		case "quit":
+			gamelogic.PrintQuit()
+			return
+		default:
+			fmt.Println(util.MessageWrongCommand)
+		}
+	}
+}
+
+func spawn(gs *gamelogic.GameState, words []string) {
+	err := gs.CommandSpawn(words)
+	if err != nil {
+		fmt.Printf("cannot spawn: %v\n", err)
+	}
+}
+
+func move(gs *gamelogic.GameState, words []string) {
+	_, err := gs.CommandMove(words)
+	if err != nil {
+		fmt.Printf("cannot move: %v\n", err)
+		return
+	}
 }

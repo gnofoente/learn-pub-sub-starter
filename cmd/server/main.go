@@ -68,7 +68,7 @@ loop:
 			fmt.Println("exiting...")
 			break loop
 		default:
-			fmt.Println("I didn't understand this command, try again.")
+			fmt.Println(util.MessageWrongCommand)
 		}
 	}
 
