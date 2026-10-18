@@ -11,7 +11,7 @@ import (
 type SimpleQueueType string
 
 const (
-	QueueTypeDurable   SimpleQueueType = "Durable"
+	QueueTypeDurable   SimpleQueueType = "durable"
 	QueueTypeTransient SimpleQueueType = "transient"
 )
 

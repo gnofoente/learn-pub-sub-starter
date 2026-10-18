@@ -15,7 +15,7 @@ import (
 const connUrl string = "amqp://guest:guest@localhost:5672/"
 
 func main() {
-	log.Println("Starting Peril client...")
+	fmt.Println("Starting Peril client...")
 	conn, err := amqp.Dial(connUrl)
 	if err != nil {
 		fmt.Printf("error connecting: %v", err)
@@ -29,13 +29,18 @@ func main() {
 		return
 	}
 
-	pubsub.DeclareAndBind(
+	_, q, err := pubsub.DeclareAndBind(
 		conn,
 		routing.ExchangePerilDirect,
 		fmt.Sprintf("%s.%s", routing.PauseKey, username),
 		routing.PauseKey,
 		pubsub.QueueTypeTransient,
 	)
+	if err != nil {
+		log.Fatalf("could not subscribe to pause: %v", err)
+	}
+
+	fmt.Printf("queue %v declared & bound\n", q.Name)
 
 	util.DoOnSignal(func() {
 		fmt.Println("goodbye...")
