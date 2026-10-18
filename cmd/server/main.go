@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/util"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -39,14 +39,7 @@ func main() {
 
 	fmt.Println("connected succesfully")
 
-	doOnSignal(func() {
+	util.DoOnSignal(func() {
 		fmt.Println("application gracefully stopped")
 	}, os.Interrupt)
-}
-
-func doOnSignal(fn func(), signals ...os.Signal) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, signals...)
-	<-sigChan
-	fn()
 }
