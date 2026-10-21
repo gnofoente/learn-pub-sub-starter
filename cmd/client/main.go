@@ -43,6 +43,15 @@ func main() {
 	gs := gamelogic.NewGameState(username)
 	fmt.Println("a new game state was set")
 
+	pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilDirect,
+		fmt.Sprintf("%s.%s", routing.PauseKey, username),
+		routing.PauseKey,
+		pubsub.QueueTypeTransient,
+		handlerPause(gs),
+	)
+
 	for {
 		words := gamelogic.GetInput()
 		if len(words) == 0 {
@@ -81,5 +90,12 @@ func move(gs *gamelogic.GameState, words []string) {
 	if err != nil {
 		fmt.Printf("cannot move: %v\n", err)
 		return
+	}
+}
+
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	return func(ps routing.PlayingState) {
+		defer fmt.Print("> ")
+		gs.HandlePause(ps)
 	}
 }
