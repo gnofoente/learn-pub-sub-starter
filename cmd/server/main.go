@@ -32,6 +32,20 @@ func main() {
 
 	gamelogic.PrintServerHelp()
 
+	queueName := routing.GameLogSlug
+	_, _, err = pubsub.DeclareAndBind(
+		conn,
+		routing.ExchangePerilTopic,
+		queueName,
+		routing.GameLogSlug+"*",
+		pubsub.QueueTypeDurable,
+	)
+	if err != nil {
+		fmt.Printf("failed to declare %s: %v", queueName, err)
+		return
+	}
+	fmt.Println("declared", queueName, "successfully")
+
 loop:
 	for {
 		words := gamelogic.GetInput()
