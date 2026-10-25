@@ -9,10 +9,14 @@ import (
 )
 
 type SimpleQueueType string
+type AckType string
 
 const (
 	QueueTypeDurable   SimpleQueueType = "durable"
 	QueueTypeTransient SimpleQueueType = "transient"
+	AckTypeAck         AckType         = "Ack"
+	AckTypeNackRequeue AckType         = "NackRequeue"
+	AckTypeNackDiscard AckType         = "NackDiscard"
 )
 
 func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
@@ -70,7 +74,7 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	queueType SimpleQueueType,
-	handler func(T),
+	handler func(T) AckType,
 ) error {
 	boundchn, _, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
 	if err != nil {
@@ -83,13 +87,23 @@ func SubscribeJSON[T any](
 	}
 
 	go func() {
-		for delivery := range deliveryChan {
+		for msg := range deliveryChan {
 			var message T
-			if err := json.Unmarshal(delivery.Body, &message); err != nil {
+			if err := json.Unmarshal(msg.Body, &message); err != nil {
 				fmt.Println("unmarshal error: %v", err)
 			}
-			handler(message)
-			delivery.Ack(false)
+			acktype := handler(message)
+			switch acktype {
+			case AckTypeAck:
+				msg.Ack(false)
+				fmt.Println("ack")
+			case AckTypeNackRequeue:
+				msg.Nack(false, true)
+				fmt.Println("nack, requeue")
+			case AckTypeNackDiscard:
+				msg.Nack(false, false)
+				fmt.Println("nack, discard")
+			}
 		}
 	}()
 
