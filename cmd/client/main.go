@@ -52,6 +52,17 @@ func main() {
 		handlerPause(gs),
 	)
 
+	pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilTopic,
+		fmt.Sprintf("army_moves.%s", username),
+		"army_moves.*",
+		pubsub.QueueTypeTransient,
+		handlerMove(gs),
+	)
+
+	ch, err := conn.Channel()
+
 	for {
 		words := gamelogic.GetInput()
 		if len(words) == 0 {
@@ -62,7 +73,7 @@ func main() {
 		case "spawn":
 			spawn(gs, words)
 		case "move":
-			move(gs, words)
+			move(gs, words, ch, username)
 		case "status":
 			gs.CommandStatus()
 		case "help":
@@ -85,17 +96,30 @@ func spawn(gs *gamelogic.GameState, words []string) {
 	}
 }
 
-func move(gs *gamelogic.GameState, words []string) {
-	_, err := gs.CommandMove(words)
+func move(gs *gamelogic.GameState, words []string, ch *amqp.Channel, username string) {
+	m, err := gs.CommandMove(words)
 	if err != nil {
 		fmt.Printf("cannot move: %v\n", err)
 		return
 	}
+	pubsub.PublishJSON(
+		ch,
+		"peril_topic",
+		fmt.Sprintf("army_moves.%s", username),
+		m,
+	)
 }
 
 func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
 	return func(ps routing.PlayingState) {
 		defer fmt.Print("> ")
 		gs.HandlePause(ps)
+	}
+}
+
+func handlerMove(gs *gamelogic.GameState) func(gamelogic.ArmyMove) {
+	return func(m gamelogic.ArmyMove) {
+		defer fmt.Print("> ")
+		gs.HandleMove(m)
 	}
 }
