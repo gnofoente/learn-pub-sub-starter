@@ -12,6 +12,11 @@ type SimpleQueueType string
 type AckType string
 
 const (
+	deadLetterExchange = "x-dead-letter-exchange"
+	perilDlx           = "peril_dlx"
+)
+
+const (
 	QueueTypeDurable   SimpleQueueType = "durable"
 	QueueTypeTransient SimpleQueueType = "transient"
 	AckTypeAck         AckType         = "Ack"
@@ -56,7 +61,10 @@ func DeclareAndBind(
 		exclusive  bool = queueType == QueueTypeTransient
 	)
 
-	q, err := chn.QueueDeclare(queueName, durable, autoDelete, exclusive, false, nil)
+	t := make(amqp.Table)
+	t[deadLetterExchange] = perilDlx
+
+	q, err := chn.QueueDeclare(queueName, durable, autoDelete, exclusive, false, t)
 	if err != nil {
 		return nil, &q, err
 	}
